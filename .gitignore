@@ -1,0 +1,62 @@
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+*.iml
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.c9/
+*.launch
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.cer
+*credentials*.json
+*service-account*.json
+.npmrc
+.netrc
+secrets.yaml
+secrets.yml
+*.secret
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
+
+# Archives (avoid committing generated bundles)
+*.zip
+*.tar
+*.tar.gz
+*.tgz

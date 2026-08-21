@@ -1,0 +1,4 @@
+# Local PocketBase data (created at runtime)
+pb_data/
+*.exe
+pack-composer-server
