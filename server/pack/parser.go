@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -17,11 +18,37 @@ func ParseAll(sourcePath string, files []ScannedFile) ([]ParsedArtifact, error) 
 		return nil, fmt.Errorf("pack parse: resolve path: %w", err)
 	}
 
+	// One sidecar directory serves every artifact beside it, so the index is
+	// read once per directory rather than once per artifact.
+	cache := map[string]provenanceIndex{}
+
 	out := make([]ParsedArtifact, 0, len(files))
 	for _, f := range files {
-		out = append(out, parseOne(root, f))
+		out = append(out, attachProvenance(root, parseOne(root, f), cache))
 	}
 	return out, nil
+}
+
+// attachProvenance resolves an artifact's sidecar after parsing, because the
+// artifact id the sidecar is keyed by is only known once the body has been read.
+func attachProvenance(
+	root string,
+	art ParsedArtifact,
+	cache map[string]provenanceIndex,
+) ParsedArtifact {
+	dirRel := path.Dir(art.SourceRelativePath)
+	if dirRel == "." || dirRel == "/" {
+		dirRel = ""
+	}
+
+	index, ok := cache[dirRel]
+	if !ok {
+		index = loadProvenanceDir(root, dirRel)
+		cache[dirRel] = index
+	}
+
+	art.Provenance = classifyProvenance(index, art.ArtifactID, art.Content)
+	return art
 }
 
 // ParseFile parses a single artifact file relative to sourcePath.
@@ -30,7 +57,7 @@ func ParseFile(sourcePath string, file ScannedFile) (ParsedArtifact, error) {
 	if err != nil {
 		return ParsedArtifact{}, fmt.Errorf("pack parse: resolve path: %w", err)
 	}
-	return parseOne(root, file), nil
+	return attachProvenance(root, parseOne(root, file), map[string]provenanceIndex{}), nil
 }
 
 func parseOne(root string, file ScannedFile) ParsedArtifact {

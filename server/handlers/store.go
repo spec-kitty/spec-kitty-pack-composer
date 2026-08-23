@@ -234,6 +234,8 @@ func replaceArtifacts(app core.App, artsCol *core.Collection, packID string, art
 		rec.Set("parse_error", a.ParseError)
 		rec.Set("content", a.Content)
 		rec.Set("source_relative_path", a.SourceRelativePath)
+		rec.Set("provenance_status", string(a.Provenance.Status))
+		rec.Set("provenance", a.Provenance)
 		if len(a.Roles) > 0 {
 			rec.Set("roles", a.Roles)
 		}

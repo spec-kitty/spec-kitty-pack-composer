@@ -52,6 +52,13 @@ func Scan(sourcePath string) ([]ScannedFile, error) {
 			if name == ".git" || name == "node_modules" || name == "__pycache__" {
 				return filepath.SkipDir
 			}
+			// Sidecars are metadata about artifacts, never artifacts. This has
+			// to be explicit: classify() treats every file under templates/**
+			// and glossary/** as an artifact, so an unskipped .provenance
+			// directory under either root would be ingested as content.
+			if isProvenanceDir(d) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if _, skip := skipBasenames[name]; skip {

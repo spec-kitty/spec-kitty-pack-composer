@@ -7,6 +7,8 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/types"
+
+	"github.com/spec-kitty/pack-composer/server/pack"
 )
 
 // publicRule opens a collection to unauthenticated local use (C-003: no auth this mission).
@@ -172,10 +174,48 @@ func ensurePacksOriginBuiltinValue(app core.App, collection *core.Collection) er
 	return app.Save(collection)
 }
 
-func ensurePackArtifacts(app core.App, packs *core.Collection) error {
-	_, err := app.FindCollectionByNameOrId("pack_artifacts")
-	if err == nil {
+// provenanceStatusField describes an artifact's relationship to an upstream
+// document, which is a different question from whether its file on disk has
+// changed. "authored" is the expected answer for hand-written doctrine and is
+// not a defect; only "undeclared" is.
+func provenanceStatusField() *core.SelectField {
+	return &core.SelectField{
+		Name: "provenance_status",
+		Values: []string{
+			string(pack.ProvenanceAuthored),
+			string(pack.ProvenanceDeclared),
+			string(pack.ProvenanceUndeclared),
+		},
+		MaxSelect: 1,
+	}
+}
+
+// ensurePackArtifactsProvenanceFields adds the provenance fields to a
+// pack_artifacts collection created before they existed. Records keep an empty
+// status until their pack is next imported or refreshed, which is honest:
+// nothing has read a sidecar for them yet.
+func ensurePackArtifactsProvenanceFields(app core.App, collection *core.Collection) error {
+	changed := false
+	if collection.Fields.GetByName("provenance_status") == nil {
+		collection.Fields.Add(provenanceStatusField())
+		changed = true
+	}
+	if collection.Fields.GetByName("provenance") == nil {
+		collection.Fields.Add(&core.JSONField{
+			Name: "provenance",
+		})
+		changed = true
+	}
+	if !changed {
 		return nil
+	}
+	return app.Save(collection)
+}
+
+func ensurePackArtifacts(app core.App, packs *core.Collection) error {
+	existing, err := app.FindCollectionByNameOrId("pack_artifacts")
+	if err == nil {
+		return ensurePackArtifactsProvenanceFields(app, existing)
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
@@ -235,6 +275,10 @@ func ensurePackArtifacts(app core.App, packs *core.Collection) error {
 	})
 	collection.Fields.Add(&core.TextField{
 		Name: "source_relative_path",
+	})
+	collection.Fields.Add(provenanceStatusField())
+	collection.Fields.Add(&core.JSONField{
+		Name: "provenance",
 	})
 	collection.Fields.Add(&core.AutodateField{
 		Name:     "created",

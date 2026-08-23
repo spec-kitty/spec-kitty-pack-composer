@@ -33,6 +33,7 @@ type ParsedArtifact struct {
 	ParseError         string         `json:"parse_error,omitempty"`
 	Content            map[string]any `json:"content"`
 	SourceRelativePath string         `json:"source_relative_path"`
+	Provenance         Provenance     `json:"provenance"`
 }
 
 // Link is a README markdown link extracted for the Links card.
